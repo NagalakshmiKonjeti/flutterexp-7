@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+void main() {
+  runApp(
+    ChangeNotifierProvider<RegistrationData>(
+      create: (context) => RegistrationData(),
+      builder: (context, child) => const RegistrationApp(),
+    ),
+  );
+}
+
+class RegistrationData extends ChangeNotifier {
+  String _name = '';
+  String _email = '';
+  String _phone = '';
+  String _password = '';
+
+  String get name => _name;
+  String get email => _email;
+  String get phone => _phone;
+  String get password => _password;
+
+  void updateData({String? name, String? email, String? phone, String? password}) {
+    if (name != null) _name = name;
+    if (email != null) _email = email;
+    if (phone != null) _phone = phone;
+    if (password != null) _password = password;
+    notifyListeners();
+  }
+}
+
+class RegistrationApp extends StatelessWidget {
+  const RegistrationApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.deepPurple,
+      ),
+      home: const RegistrationForm(),
+    );
+  }
+}
+
+class RegistrationForm extends StatefulWidget {
+  const RegistrationForm({super.key});
+
+  @override
+  State<RegistrationForm> createState() => _RegistrationFormState();
+}
+
+class _RegistrationFormState extends State<RegistrationForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = context.read<RegistrationData>();
+    _nameController = TextEditingController(text: data.name);
+    _emailController = TextEditingController(text: data.email);
+    _phoneController = TextEditingController(text: data.phone);
+    _passwordController = TextEditingController(text: data.password);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _syncData() {
+    context.read<RegistrationData>().updateData(
+          name: _nameController.text,
+          email: _emailController.text,
+          phone: _phoneController.text,
+          password: _passwordController.text,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Account Setup')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          onChanged: _syncData,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
+                validator: (v) => (v?.isEmpty ?? true) ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email), border: OutlineInputBorder()),
+                validator: (v) => (v?.contains('@') ?? false) ? null : 'Please enter a valid email',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone), border: OutlineInputBorder()),
+                validator: (v) => (v?.length == 10) ? null : 'Must be 10 digits',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Security Password', prefixIcon: Icon(Icons.lock), border: OutlineInputBorder()),
+                validator: (v) => (v?.length ?? 0) >= 6 ? null : 'Password must be at least 6 characters',
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SummaryPage()));
+                    }
+                  },
+                  child: const Text('REVIEW DETAILS', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SummaryPage extends StatelessWidget {
+  const SummaryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = context.watch<RegistrationData>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile Summary')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Card(
+              child: Column(
+                children: [
+                  ListTile(leading: const Icon(Icons.person), title: const Text('Name'), subtitle: Text(data.name)),
+                  ListTile(leading: const Icon(Icons.email), title: const Text('Email'), subtitle: Text(data.email)),
+                  ListTile(leading: const Icon(Icons.phone), title: const Text('Phone'), subtitle: Text(data.phone)),
+                ],
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('EDIT PROFILE')),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
